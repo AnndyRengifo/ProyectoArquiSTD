@@ -1,0 +1,845 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es">
+<head>
+<!-- 2024-08-13 Tue 20:45 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Proyecto ICCD332 Arquitectura de Computadores</title>
+<meta name="author" content="Anndy Rengifo" />
+<meta name="generator" content="Org Mode" />
+<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css" />
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Proyecto ICCD332 Arquitectura de Computadores</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>&Iacute;ndice</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgd74491d">1. City Weather APP</a>
+<ul>
+<li><a href="#orgea8a221">1.1. Estructura del proyecto</a></li>
+<li><a href="#orga35f1d4">1.2. Descripción del Código</a></li>
+<li><a href="#orgcc9d55f">1.3. Script `main.py`</a></li>
+<li><a href="#orgba5af6c">1.4. Script `get-weather.sh`</a></li>
+<li><a href="#org3a49a4a">1.5. Configuración de Crontab</a></li>
+<li><a href="#org7f91a94">1.6. Muestra Aleatoria de datos</a></li>
+<li><a href="#org65b745e">1.7. Grafica Temperatura vs Tiempo</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgd74491d" class="outline-2">
+<h2 id="orgd74491d"><span class="section-number-2">1.</span> City Weather APP</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Este es el proyecto de fin de semestre en donde se pretende demostrar
+las destrezas obtenidas durante el transcurso de la asignatura de
+<b><b>Arquitectura de Computadores</b></b>.
+</p>
+
+<ol class="org-ol">
+<li>Conocimientos de sistema operativo Linux</li>
+<li>Conocimientos de Emacs/Jupyter</li>
+<li>Configuración de Entorno para Data Science con Mamba/Anaconda</li>
+<li>Literate Programming</li>
+</ol>
+</div>
+
+<div id="outline-container-orgea8a221" class="outline-3">
+<h3 id="orgea8a221"><span class="section-number-3">1.1.</span> Estructura del proyecto</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Se ha creado la carpeta <i>home/anndy19/CityWeather</i> para almacenar el proyecto.
+El proyecto ha de tener los siguientes archivos y subdirectorios:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-shell"><span style="font-weight: bold; font-style: italic;">#</span><span style="font-weight: bold; font-style: italic;">cd /home/anndy19/CityWeather</span>
+<span style="font-weight: bold;">pwd</span>
+</pre>
+</div>
+
+<pre class="example">
+/home/anndy19/CityWeather/weather-site/content
+</pre>
+
+
+<p>
+El proyecto ha de tener los siguientes archivos y
+subdirectorios. Adaptar los nombres de los archivos según las ciudades
+específicas del grupo.
+</p>
+
+<pre class="example" id="orge250084">
+.
+├── build-site.el
+├── build-site.el~
+├── build.sh
+├── build.sh~
+├── content
+│   ├── #index.org#
+│   ├── images
+│   └── index.org
+└── public
+    ├── images
+    ├── index.html
+    └── index.html~
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orga35f1d4" class="outline-3">
+<h3 id="orga35f1d4"><span class="section-number-3">1.2.</span> Descripción del Código</h3>
+</div>
+
+
+<div id="outline-container-orgcc9d55f" class="outline-3">
+<h3 id="orgcc9d55f"><span class="section-number-3">1.3.</span> Script `main.py`</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+El script `main.py` consulta la API de OpenWeatherMap y guarda los datos en `clima-santo-domingo-hoy.csv`. A continuación, se muestra el código del script:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="font-weight: bold;">import</span> requests
+<span style="font-weight: bold;">import</span> csv
+<span style="font-weight: bold;">from</span> datetime <span style="font-weight: bold;">import</span> datetime, timezone
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Configuraci&#243;n</span>
+<span style="font-weight: bold; font-style: italic;">API_KEY</span> = <span style="font-style: italic;">'tu_api_key_aqu&#237;'</span>
+<span style="font-weight: bold; font-style: italic;">LATITUDE</span> = -0.25
+<span style="font-weight: bold; font-style: italic;">LONGITUDE</span> = -79.15
+<span style="font-weight: bold; font-style: italic;">FILE_NAME</span> = <span style="font-style: italic;">'/home/anndy19/CityWeather/clima-STD-hoy.csv'</span>
+
+<span style="font-weight: bold;">def</span> <span style="font-weight: bold;">get_weather</span>(lat, lon, api):
+    <span style="font-weight: bold; font-style: italic;">URL</span> = f<span style="font-style: italic;">'http://api.openweathermap.org/data/2.5/weather?lat=</span>{lat}<span style="font-style: italic;">&amp;lon=</span>{lon}<span style="font-style: italic;">&amp;appid=</span>{api}<span style="font-style: italic;">'</span>
+    <span style="font-weight: bold; font-style: italic;">response</span> = requests.get(URL)
+    <span style="font-weight: bold;">return</span> response.json()
+
+<span style="font-weight: bold;">def</span> <span style="font-weight: bold;">process</span>(json):
+    <span style="font-weight: bold; font-style: italic;">weather_data</span> = {
+        <span style="font-style: italic;">'datetime'</span>: datetime.now(timezone.utc).strftime(<span style="font-style: italic;">'%Y-%m-%d %H:%M:%S'</span>),
+        <span style="font-style: italic;">'coord_lon'</span>: json.get(<span style="font-style: italic;">'coord'</span>, {}).get(<span style="font-style: italic;">'lon'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'coord_lat'</span>: json.get(<span style="font-style: italic;">'coord'</span>, {}).get(<span style="font-style: italic;">'lat'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'weather_id'</span>: json.get(<span style="font-style: italic;">'weather'</span>, [{}])[0].get(<span style="font-style: italic;">'id'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'weather_main'</span>: json.get(<span style="font-style: italic;">'weather'</span>, [{}])[0].get(<span style="font-style: italic;">'main'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'weather_description'</span>: json.get(<span style="font-style: italic;">'weather'</span>, [{}])[0].get(<span style="font-style: italic;">'description'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'weather_icon'</span>: json.get(<span style="font-style: italic;">'weather'</span>, [{}])[0].get(<span style="font-style: italic;">'icon'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'base'</span>: json.get(<span style="font-style: italic;">'base'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_temp'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'temp'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_feels_like'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'feels_like'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_temp_min'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'temp_min'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_temp_max'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'temp_max'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_pressure'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'pressure'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_humidity'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'humidity'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_sea_level'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'sea_level'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'main_grnd_level'</span>: json.get(<span style="font-style: italic;">'main'</span>, {}).get(<span style="font-style: italic;">'grnd_level'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'visibility'</span>: json.get(<span style="font-style: italic;">'visibility'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'wind_speed'</span>: json.get(<span style="font-style: italic;">'wind'</span>, {}).get(<span style="font-style: italic;">'speed'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'wind_deg'</span>: json.get(<span style="font-style: italic;">'wind'</span>, {}).get(<span style="font-style: italic;">'deg'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'wind_gust'</span>: json.get(<span style="font-style: italic;">'wind'</span>, {}).get(<span style="font-style: italic;">'gust'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'clouds_all'</span>: json.get(<span style="font-style: italic;">'clouds'</span>, {}).get(<span style="font-style: italic;">'all'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'sys_type'</span>: json.get(<span style="font-style: italic;">'sys'</span>, {}).get(<span style="font-style: italic;">'type'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'sys_id'</span>: json.get(<span style="font-style: italic;">'sys'</span>, {}).get(<span style="font-style: italic;">'id'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'sys_country'</span>: json.get(<span style="font-style: italic;">'sys'</span>, {}).get(<span style="font-style: italic;">'country'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'sys_sunrise'</span>: json.get(<span style="font-style: italic;">'sys'</span>, {}).get(<span style="font-style: italic;">'sunrise'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'sys_sunset'</span>: json.get(<span style="font-style: italic;">'sys'</span>, {}).get(<span style="font-style: italic;">'sunset'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'timezone'</span>: json.get(<span style="font-style: italic;">'timezone'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'id'</span>: json.get(<span style="font-style: italic;">'id'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'name'</span>: json.get(<span style="font-style: italic;">'name'</span>, <span style="font-style: italic;">'N/A'</span>),
+        <span style="font-style: italic;">'cod'</span>: json.get(<span style="font-style: italic;">'cod'</span>, <span style="font-style: italic;">'N/A'</span>)
+    }
+    <span style="font-weight: bold;">return</span> weather_data
+
+<span style="font-weight: bold;">def</span> <span style="font-weight: bold;">write2csv</span>(data, csv_filename):
+    <span style="font-weight: bold;">with</span> <span style="font-weight: bold;">open</span>(csv_filename, mode=<span style="font-style: italic;">'a'</span>, newline=<span style="font-style: italic;">''</span>) <span style="font-weight: bold;">as</span> <span style="font-weight: bold;">file</span>:
+        <span style="font-weight: bold; font-style: italic;">writer</span> = csv.writer(<span style="font-weight: bold;">file</span>)
+
+        <span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Escribo la cabecera si el archivo est&#225; vac&#237;o</span>
+        <span style="font-weight: bold;">if</span> <span style="font-weight: bold;">file</span>.tell() == 0:
+            writer.writerow([
+                <span style="font-style: italic;">'datetime'</span>, <span style="font-style: italic;">'coord_lon'</span>, <span style="font-style: italic;">'coord_lat'</span>, <span style="font-style: italic;">'weather_id'</span>, <span style="font-style: italic;">'weather_main'</span>, <span style="font-style: italic;">'weather_description'</span>, <span style="font-style: italic;">'weather_icon'</span>,
+                <span style="font-style: italic;">'base'</span>, <span style="font-style: italic;">'main_temp'</span>, <span style="font-style: italic;">'main_feels_like'</span>, <span style="font-style: italic;">'main_temp_min'</span>, <span style="font-style: italic;">'main_temp_max'</span>, <span style="font-style: italic;">'main_pressure'</span>, <span style="font-style: italic;">'main_humidity'</span>,
+                <span style="font-style: italic;">'main_sea_level'</span>, <span style="font-style: italic;">'main_grnd_level'</span>, <span style="font-style: italic;">'visibility'</span>, <span style="font-style: italic;">'wind_speed'</span>, <span style="font-style: italic;">'wind_deg'</span>, <span style="font-style: italic;">'wind_gust'</span>, <span style="font-style: italic;">'clouds_all'</span>,
+                <span style="font-style: italic;">'sys_type'</span>, <span style="font-style: italic;">'sys_id'</span>, <span style="font-style: italic;">'sys_country'</span>, <span style="font-style: italic;">'sys_sunrise'</span>, <span style="font-style: italic;">'sys_sunset'</span>, <span style="font-style: italic;">'timezone'</span>, <span style="font-style: italic;">'id'</span>, <span style="font-style: italic;">'name'</span>, <span style="font-style: italic;">'cod'</span>
+            ])
+
+        writer.writerow([
+            data.get(<span style="font-style: italic;">'datetime'</span>),
+            data.get(<span style="font-style: italic;">'coord_lon'</span>),
+            data.get(<span style="font-style: italic;">'coord_lat'</span>),
+            data.get(<span style="font-style: italic;">'weather_id'</span>),
+            data.get(<span style="font-style: italic;">'weather_main'</span>),
+            data.get(<span style="font-style: italic;">'weather_description'</span>),
+            data.get(<span style="font-style: italic;">'weather_icon'</span>),
+            data.get(<span style="font-style: italic;">'base'</span>),
+            data.get(<span style="font-style: italic;">'main_temp'</span>),
+            data.get(<span style="font-style: italic;">'main_feels_like'</span>),
+            data.get(<span style="font-style: italic;">'main_temp_min'</span>),
+            data.get(<span style="font-style: italic;">'main_temp_max'</span>),
+            data.get(<span style="font-style: italic;">'main_pressure'</span>),
+            data.get(<span style="font-style: italic;">'main_humidity'</span>),
+            data.get(<span style="font-style: italic;">'main_sea_level'</span>),
+            data.get(<span style="font-style: italic;">'main_grnd_level'</span>),
+            data.get(<span style="font-style: italic;">'visibility'</span>),
+            data.get(<span style="font-style: italic;">'wind_speed'</span>),
+            data.get(<span style="font-style: italic;">'wind_deg'</span>),
+            data.get(<span style="font-style: italic;">'wind_gust'</span>),
+            data.get(<span style="font-style: italic;">'clouds_all'</span>),
+            data.get(<span style="font-style: italic;">'sys_type'</span>),
+            data.get(<span style="font-style: italic;">'sys_id'</span>),
+            data.get(<span style="font-style: italic;">'sys_country'</span>),
+            data.get(<span style="font-style: italic;">'sys_sunrise'</span>),
+            data.get(<span style="font-style: italic;">'sys_sunset'</span>),
+            data.get(<span style="font-style: italic;">'timezone'</span>),
+            data.get(<span style="font-style: italic;">'id'</span>),
+            data.get(<span style="font-style: italic;">'name'</span>),
+            data.get(<span style="font-style: italic;">'cod'</span>)
+        ])
+
+<span style="font-weight: bold;">def</span> <span style="font-weight: bold;">main</span>():
+    <span style="font-weight: bold;">print</span>(<span style="font-style: italic;">"===== Bienvenido a Santo Domingo Weather ====="</span>)
+    <span style="font-weight: bold; font-style: italic;">weather_data</span> = get_weather(lat=LATITUDE, lon=LONGITUDE, api=API_KEY)
+    <span style="font-weight: bold;">if</span> weather_data.get(<span style="font-style: italic;">'cod'</span>) != 404:
+        <span style="font-weight: bold; font-style: italic;">processed_data</span> = process(weather_data)
+        write2csv(processed_data, FILE_NAME)
+    <span style="font-weight: bold;">else</span>:
+        <span style="font-weight: bold;">print</span>(<span style="font-style: italic;">"Ciudad no disponible o API KEY no v&#225;lida"</span>)
+
+<span style="font-weight: bold;">if</span> <span style="font-weight: bold;">__name__</span> == <span style="font-style: italic;">'__main__'</span>:
+    main()
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-shell">which sh
+</pre>
+</div>
+
+<pre class="example">
+/usr/bin/sh
+</pre>
+
+
+<div class="org-src-container">
+<pre class="src src-shell">which mamba
+</pre>
+</div>
+
+<pre class="example">
+/home/anndy19/miniforge3/condabin/mamba
+</pre>
+
+
+<div class="org-src-container">
+<pre class="src src-shell"><span style="font-weight: bold; font-style: italic;">#</span><span style="font-weight: bold; font-style: italic;">!/usr/bin/</span><span style="font-weight: bold;">sh</span>
+<span style="font-weight: bold;">source</span> /home/anndy19/miniforge3/etc/profile.d/conda.sh
+<span style="font-weight: bold;">eval</span> <span style="font-style: italic;">"$(</span><span style="font-weight: bold;">conda shell.bash hook</span><span style="font-style: italic;">)"</span>
+conda activate iccd332
+
+python main.py
+
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgba5af6c" class="outline-3">
+<h3 id="orgba5af6c"><span class="section-number-3">1.4.</span> Script `get-weather.sh`</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+Este script ejecuta `main.py` y está configurado para ejecutarse cada 5 minutos a través de cron.
+</p>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-org3a49a4a" class="outline-3">
+<h3 id="org3a49a4a"><span class="section-number-3">1.5.</span> Configuración de Crontab</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+Se ha configurado crontab para ejecutar `get-weather.sh` cada 5 minutos y guardar la salida en `output.log`.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-shell">*/5 * * * * cd /home/anndy19/CityWeather &amp;&amp; ./get-weather.sh &gt;&gt; output.log 2&gt;&amp;1
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7f91a94" class="outline-3">
+<h3 id="org7f91a94"><span class="section-number-3">1.6.</span> Muestra Aleatoria de datos</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+Se muestra un ejemplo de los primeros 10 valores obtenidos por el script:
+</p>
+<div class="org-src-container">
+<label class="org-src-name"><span class="listing-number">Listado de programa 1 </span>Lectura de archivo csv</label><pre class="src src-python"><span style="font-weight: bold;">import</span> os
+<span style="font-weight: bold;">import</span> pandas <span style="font-weight: bold;">as</span> pd
+<span style="font-weight: bold; font-style: italic;">#</span><span style="font-weight: bold; font-style: italic;">Lectura del archivo csv obtenido</span>
+<span style="font-weight: bold; font-style: italic;">df</span> = pd.read_csv(<span style="font-style: italic;">'/home/anndy19/CityWeather/clima-STD-hoy.csv'</span>)
+<span style="font-weight: bold; font-style: italic;">#</span><span style="font-weight: bold; font-style: italic;">se imprime la estructura del dataframe</span>
+<span style="font-weight: bold;">print</span>(df.shape)
+</pre>
+</div>
+
+
+
+
+
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">print(df.shape)</span>
+<span style="font-weight: bold; font-style: italic;">table1</span> = df.sample(10)
+<span style="font-weight: bold; font-style: italic;">table</span> = [<span style="font-weight: bold;">list</span>(table1)]+[<span style="font-weight: bold; text-decoration: underline;">None</span>]+table1.values.tolist()
+
+</pre>
+</div>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">datetime</th>
+<th scope="col" class="org-right">coord<sub>lon</sub></th>
+<th scope="col" class="org-right">coord<sub>lat</sub></th>
+<th scope="col" class="org-right">weather<sub>id</sub></th>
+<th scope="col" class="org-left">weather<sub>main</sub></th>
+<th scope="col" class="org-left">weather<sub>description</sub></th>
+<th scope="col" class="org-left">weather<sub>icon</sub></th>
+<th scope="col" class="org-left">base</th>
+<th scope="col" class="org-right">main<sub>temp</sub></th>
+<th scope="col" class="org-right">main<sub>feels</sub><sub>like</sub></th>
+<th scope="col" class="org-right">main<sub>temp</sub><sub>min</sub></th>
+<th scope="col" class="org-right">main<sub>temp</sub><sub>max</sub></th>
+<th scope="col" class="org-right">main<sub>pressure</sub></th>
+<th scope="col" class="org-right">main<sub>humidity</sub></th>
+<th scope="col" class="org-right">main<sub>sea</sub><sub>level</sub></th>
+<th scope="col" class="org-right">main<sub>grnd</sub><sub>level</sub></th>
+<th scope="col" class="org-right">visibility</th>
+<th scope="col" class="org-right">wind<sub>speed</sub></th>
+<th scope="col" class="org-right">wind<sub>deg</sub></th>
+<th scope="col" class="org-right">wind<sub>gust</sub></th>
+<th scope="col" class="org-right">clouds<sub>all</sub></th>
+<th scope="col" class="org-right">sys<sub>type</sub></th>
+<th scope="col" class="org-right">sys<sub>id</sub></th>
+<th scope="col" class="org-left">sys<sub>country</sub></th>
+<th scope="col" class="org-right">sys<sub>sunrise</sub></th>
+<th scope="col" class="org-right">sys<sub>sunset</sub></th>
+<th scope="col" class="org-right">timezone</th>
+<th scope="col" class="org-right">id</th>
+<th scope="col" class="org-left">name</th>
+<th scope="col" class="org-right">cod</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">2024-08-13 03:45:05</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">804</td>
+<td class="org-left">Clouds</td>
+<td class="org-left">overcast clouds</td>
+<td class="org-left">04n</td>
+<td class="org-left">stations</td>
+<td class="org-right">294.34</td>
+<td class="org-right">294.97</td>
+<td class="org-right">294.34</td>
+<td class="org-right">294.34</td>
+<td class="org-right">1014</td>
+<td class="org-right">94</td>
+<td class="org-right">1014</td>
+<td class="org-right">948</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.69</td>
+<td class="org-right">328</td>
+<td class="org-right">1.32</td>
+<td class="org-right">96</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 02:15:05</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">804</td>
+<td class="org-left">Clouds</td>
+<td class="org-left">overcast clouds</td>
+<td class="org-left">04n</td>
+<td class="org-left">stations</td>
+<td class="org-right">295.36</td>
+<td class="org-right">295.96</td>
+<td class="org-right">295.36</td>
+<td class="org-right">295.36</td>
+<td class="org-right">1013</td>
+<td class="org-right">89</td>
+<td class="org-right">1013</td>
+<td class="org-right">947</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.17</td>
+<td class="org-right">25</td>
+<td class="org-right">0.96</td>
+<td class="org-right">96</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 03:55:02</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">804</td>
+<td class="org-left">Clouds</td>
+<td class="org-left">overcast clouds</td>
+<td class="org-left">04n</td>
+<td class="org-left">stations</td>
+<td class="org-right">294.34</td>
+<td class="org-right">294.97</td>
+<td class="org-right">294.34</td>
+<td class="org-right">294.34</td>
+<td class="org-right">1014</td>
+<td class="org-right">94</td>
+<td class="org-right">1014</td>
+<td class="org-right">948</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.69</td>
+<td class="org-right">328</td>
+<td class="org-right">1.32</td>
+<td class="org-right">96</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 00:45:08</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">500</td>
+<td class="org-left">Rain</td>
+<td class="org-left">light rain</td>
+<td class="org-left">10n</td>
+<td class="org-left">stations</td>
+<td class="org-right">295.38</td>
+<td class="org-right">296.01</td>
+<td class="org-right">295.38</td>
+<td class="org-right">295.38</td>
+<td class="org-right">1012</td>
+<td class="org-right">90</td>
+<td class="org-right">1012</td>
+<td class="org-right">947</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.37</td>
+<td class="org-right">121</td>
+<td class="org-right">0.42</td>
+<td class="org-right">91</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 02:00:07</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">804</td>
+<td class="org-left">Clouds</td>
+<td class="org-left">overcast clouds</td>
+<td class="org-left">04n</td>
+<td class="org-left">stations</td>
+<td class="org-right">295.36</td>
+<td class="org-right">295.96</td>
+<td class="org-right">295.36</td>
+<td class="org-right">295.36</td>
+<td class="org-right">1013</td>
+<td class="org-right">89</td>
+<td class="org-right">1013</td>
+<td class="org-right">947</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.17</td>
+<td class="org-right">25</td>
+<td class="org-right">0.96</td>
+<td class="org-right">96</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 15:15:02</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">500</td>
+<td class="org-left">Rain</td>
+<td class="org-left">light rain</td>
+<td class="org-left">10d</td>
+<td class="org-left">stations</td>
+<td class="org-right">294.74</td>
+<td class="org-right">295.36</td>
+<td class="org-right">294.74</td>
+<td class="org-right">294.74</td>
+<td class="org-right">1014</td>
+<td class="org-right">92</td>
+<td class="org-right">1014</td>
+<td class="org-right">949</td>
+<td class="org-right">9591</td>
+<td class="org-right">1.0</td>
+<td class="org-right">254</td>
+<td class="org-right">1.52</td>
+<td class="org-right">100</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723547898</td>
+<td class="org-right">1723591479</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 00:30:02</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">500</td>
+<td class="org-left">Rain</td>
+<td class="org-left">light rain</td>
+<td class="org-left">10n</td>
+<td class="org-left">stations</td>
+<td class="org-right">295.75</td>
+<td class="org-right">296.36</td>
+<td class="org-right">295.75</td>
+<td class="org-right">295.75</td>
+<td class="org-right">1011</td>
+<td class="org-right">88</td>
+<td class="org-right">1011</td>
+<td class="org-right">946</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.16</td>
+<td class="org-right">210</td>
+<td class="org-right">0.3</td>
+<td class="org-right">85</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 15:25:01</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">500</td>
+<td class="org-left">Rain</td>
+<td class="org-left">light rain</td>
+<td class="org-left">10d</td>
+<td class="org-left">stations</td>
+<td class="org-right">294.74</td>
+<td class="org-right">295.36</td>
+<td class="org-right">294.74</td>
+<td class="org-right">294.74</td>
+<td class="org-right">1014</td>
+<td class="org-right">92</td>
+<td class="org-right">1014</td>
+<td class="org-right">949</td>
+<td class="org-right">9591</td>
+<td class="org-right">1.0</td>
+<td class="org-right">254</td>
+<td class="org-right">1.52</td>
+<td class="org-right">100</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723547898</td>
+<td class="org-right">1723591479</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 00:18:32</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">500</td>
+<td class="org-left">Rain</td>
+<td class="org-left">light rain</td>
+<td class="org-left">10n</td>
+<td class="org-left">stations</td>
+<td class="org-right">295.75</td>
+<td class="org-right">296.36</td>
+<td class="org-right">295.75</td>
+<td class="org-right">295.75</td>
+<td class="org-right">1011</td>
+<td class="org-right">88</td>
+<td class="org-right">1011</td>
+<td class="org-right">946</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.16</td>
+<td class="org-right">210</td>
+<td class="org-right">0.3</td>
+<td class="org-right">85</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+
+<tr>
+<td class="org-left">2024-08-13 02:55:07</td>
+<td class="org-right">-79.15</td>
+<td class="org-right">-0.25</td>
+<td class="org-right">804</td>
+<td class="org-left">Clouds</td>
+<td class="org-left">overcast clouds</td>
+<td class="org-left">04n</td>
+<td class="org-left">stations</td>
+<td class="org-right">294.87</td>
+<td class="org-right">295.47</td>
+<td class="org-right">294.87</td>
+<td class="org-right">294.87</td>
+<td class="org-right">1013</td>
+<td class="org-right">91</td>
+<td class="org-right">1013</td>
+<td class="org-right">948</td>
+<td class="org-right">10000</td>
+<td class="org-right">0.1</td>
+<td class="org-right">324</td>
+<td class="org-right">0.99</td>
+<td class="org-right">95</td>
+<td class="org-right">nan</td>
+<td class="org-right">nan</td>
+<td class="org-left">EC</td>
+<td class="org-right">1723461508</td>
+<td class="org-right">1723505089</td>
+<td class="org-right">-18000</td>
+<td class="org-right">3651297</td>
+<td class="org-left">Santo Domingo de los Colorados</td>
+<td class="org-right">200</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+<div id="outline-container-org65b745e" class="outline-3">
+<h3 id="org65b745e"><span class="section-number-3">1.7.</span> Grafica Temperatura vs Tiempo</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+Realizar una gráfica de la Temperatura en el tiempo.
+</p>
+
+
+<p>
+El siguiente cógido permite hacer la gráfica de la temperatura vs
+tiempo para Org 9.7+. Para saber que versión dispone puede ejecutar
+<code>M-x org-version</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="font-weight: bold;">import</span> matplotlib.pyplot <span style="font-weight: bold;">as</span> plt
+<span style="font-weight: bold;">import</span> matplotlib.dates <span style="font-weight: bold;">as</span> mdates
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Define el tama&#241;o de la figura de salida</span>
+<span style="font-weight: bold; font-style: italic;">fig</span> = plt.figure(figsize=(8,6))
+plt.plot(df[<span style="font-style: italic;">'datetime'</span>], df[<span style="font-style: italic;">'main_temp'</span>]) <span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">dibuja las variables dt y temperatura</span>
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">ajuste para presentacion de fechas en la imagen </span>
+plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=2))
+<span style="font-weight: bold; font-style: italic;">#</span><span style="font-weight: bold; font-style: italic;">plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  </span>
+plt.grid()
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Titulo que obtiene el nombre de la ciudad del DataFrame</span>
+plt.title(f<span style="font-style: italic;">'Main Temp vs Time in </span>{<span style="font-weight: bold;">next</span>(<span style="font-weight: bold;">iter</span>(<span style="font-weight: bold;">set</span>(df.name)))}<span style="font-style: italic;">'</span>)
+plt.xticks(rotation=40) <span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">rotaci&#243;n de las etiquetas 40&#176;</span>
+fig.tight_layout()
+<span style="font-weight: bold; font-style: italic;">fname</span> = <span style="font-style: italic;">'./images/temperature.png'</span>
+plt.savefig(fname)
+fname
+
+</pre>
+</div>
+
+<p>
+<a href="None">None</a>
+<img src="./images/temperature.png" alt="temperature.png" />
+</p>
+
+<p>
+Debido a que el archivo index.org se abre dentro de la carpeta
+<i>content</i>, y en cambio el servidor http de emacs se ejecuta desde la
+carpeta <i>public</i> es necesario copiar el archivo a la ubicación
+equivalente en <code>/public/images</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-shell">cp -rfv ./images/* /home/anndy19/CityWeather/weather-site/public/images
+
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="font-weight: bold;">import</span> matplotlib.pyplot <span style="font-weight: bold;">as</span> plt
+<span style="font-weight: bold;">import</span> matplotlib.dates <span style="font-weight: bold;">as</span> mdates
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Supongamos que df es un DataFrame ya cargado con las columnas 'datetime' y 'humidity'</span>
+<span style="font-weight: bold; font-style: italic;">#</span><span style="font-weight: bold; font-style: italic;">df = pd.read_csv('clima-STD-hoy.csv')  # Carga tu DataFrame</span>
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Define el tama&#241;o de la figura de salida</span>
+<span style="font-weight: bold; font-style: italic;">fig</span> = plt.figure(figsize=(8,6))
+plt.plot(df[<span style="font-style: italic;">'datetime'</span>], df[<span style="font-style: italic;">'main_humidity'</span>)  <span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Ajusta seg&#250;n tus datos</span>
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Ajuste para presentaci&#243;n de fechas en la imagen</span>
+plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=2))
+plt.grid()
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">T&#237;tulo que obtiene el nombre de la ciudad del DataFrame</span>
+plt.title(f<span style="font-style: italic;">'Humidity vs Time in </span>{<span style="font-weight: bold;">next</span>(<span style="font-weight: bold;">iter</span>(<span style="font-weight: bold;">set</span>(df.name)))}<span style="font-style: italic;">'</span>)
+plt.xlabel(<span style="font-style: italic;">'Time'</span>)
+plt.ylabel(<span style="font-style: italic;">'Humidity (%)'</span>)
+plt.xticks(rotation=40)  <span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Rotaci&#243;n de las etiquetas 40&#176;</span>
+fig.tight_layout()
+
+<span style="font-weight: bold; font-style: italic;"># </span><span style="font-weight: bold; font-style: italic;">Ruta de la imagen de salida</span>
+fname = <span style="font-style: italic;">'./images/humedity.png'</span>
+plt.savefig(fname)
+
+</pre>
+</div>
+
+<p>
+<a href=""></a>
+<img src="./images/humidity.png" alt="humidity.png" />
+</p>
+<div class="org-src-container">
+<pre class="src src-shell">cp -rfv ./images/* /home/anndy19/CityWeather/weather-site/public/images
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Fecha: 2024-08-07</p>
+<p class="author">Autor: Anndy Rengifo</p>
+<p class="date">Created: 2024-08-13 Tue 20:45</p>
+</div>
+</body>
+</html>
